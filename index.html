@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Помощник 1С - Мультяшный Стиль</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #fff3cd;
+            color: #333;
+            text-align: center;
+        }
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #ffcc00;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+            color: #ff4500;
+        }
+        .nav-buttons {
+            margin: 10px 0;
+        }
+        .nav-buttons button {
+            background: #ff4500;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: transform 0.2s;
+        }
+        .nav-buttons button:hover {
+            transform: scale(1.05);
+        }
+        .login-container, .content-container, .admin-container {
+            background: #ffe066;
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px auto;
+            max-width: 800px;
+            box-shadow: 5px 5px 0 #000;
+        }
+        .login-container input, .admin-container input, .admin-container select {
+            display: block;
+            width: 80%;
+            margin: 10px auto;
+            padding: 10px;
+            border: 2px solid #000;
+            border-radius: 5px;
+            font-size: 1.2em;
+            background: #fff;
+        }
+        .login-container button, .admin-container button, .folder, .file, .back-btn {
+            background: #ff4500;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: transform 0.2s;
+        }
+        button:hover, .folder:hover, .file:hover, .back-btn:hover {
+            transform: scale(1.05);
+        }
+        .folder, .file {
+            display: inline-block;
+            width: 150px;
+            margin: 10px;
+            padding: 10px;
+            background: #ffe066;
+            border: 2px solid #000;
+            border-radius: 10px;
+            box-shadow: 3px 3px 0 #000;
+        }
+        .folder img, .file img {
+            width: 50px;
+            height: 50px;
+        }
+        .hidden {
+            display: none;
+        }
+        .user-list {
+            text-align: left;
+            margin: 10px 0;
+        }
+        .user-item {
+            padding: 5px;
+            border-bottom: 1px solid #000;
+        }
+        .file-desc {
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span style="color: #ff4500; font-size: 1.5em;">1C</span> Помощник</h1>
+    </div>
+    <!-- Форма входа -->
+    <div id="login" class="login-container">
+        <h2>Вход</h2>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Пароль" required>
+        <button onclick="login()">Войти</button>
+    </div>
+    <!-- Основной контент -->
+    <div id="content" class="content-container hidden">
+        <h2>Файлы</h2>
+        <div class="nav-buttons">
+            <button onclick="showSection('root')" class="active">Файлы</button>
+            <button onclick="showSection('Клиенты')">Клиенты</button>
+            <button onclick="showSection('Новичкам')">Новичкам</button>
+            <button onclick="showSection('Софт')">Софт</button>
+        </div>
+        <div id="folders"></div>
+        <button class="back-btn hidden" onclick="goBack()">Назад</button>
+    </div>
+    <!-- Админ-панель -->
+    <div id="admin-panel" class="admin-container hidden">
+        <h2>Панель администратора</h2>
+        <h3>Создать пользователя</h3>
+        <input type="text" id="new-username" placeholder="Email">
+        <input type="password" id="new-password" placeholder="Пароль">
+        <select id="new-role">
+            <option value="user">Пользователь</option>
+            <option value="admin">Администратор</option>
+        </select>
+        <button onclick="createUser()">Создать</button>
+        <h3>Список пользователей</h3>
+        <div id="user-list" class="user-list"></div>
+    </div>
+
+    <script>
+        // Имитация базы данных пользователей
+        let users = JSON.parse(localStorage.getItem('users')) || {
+            'Kazik777@example.com': { password: '73501505Kazik', role: 'admin' },
+            'user1@example.com': { password: 'client456', role: 'user' }
+        };
+
+        // Структура папок с файлами и описаниями
+        let folderStructure = JSON.parse(localStorage.getItem('folderStructure')) || {
+            'root': [
+                { name: 'Клиенты', type: 'folder', contents: [
+                    { name: 'Клиент 1', type: 'folder', contents: [
+                        { name: 'Договор.pdf', type: 'file', date: '2024-04-19', description: 'Договор с клиентом' },
+                        { name: 'Презентация.pptx', type: 'file', date: '2024-03-14', description: 'Презентация для клиента' }
+                    ]},
+                    { name: 'Клиент 2', type: 'folder', contents: [
+                        { name: 'Счёт.xlsx', type: 'file', date: '2024-05-10', description: 'Счёт на оплату' }
+                    ]}
+                ]},
+                { name: 'Новичкам', type: 'folder', contents: [] },
+                { name: 'Софт', type: 'folder', contents: [] },
+                { name: 'Инструкции', type: 'folder', contents: [] }
+            ]
+        };
+
+        let currentPath = ['root'];
+        let currentUser = null;
+
+        // Функция входа
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            if (users[email] && users[email].password === password) {
+                currentUser = { email, role: users[email].role };
+                document.getElementById('login').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+                if (currentUser.role === 'admin') {
+                    document.getElementById('admin-panel').classList.remove('hidden');
+                    displayUsers();
+                }
+                showSection(currentPath[0]);
+            } else {
+                alert('Неверный email или пароль!');
+            }
+        }
+
+        // Создание нового пользователя
+        function createUser() {
+            if (currentUser?.role !== 'admin') {
+                alert('Только администратор может создавать пользователей!');
+                return;
+            }
+            const newEmail = document.getElementById('new-username').value;
+            const newPassword = document.getElementById('new-password').value;
+            const newRole = document.getElementById('new-role').value;
+            if (newEmail && newPassword && !users[newEmail]) {
+                users[newEmail] = { password: newPassword, role: newRole };
+                localStorage.setItem('users', JSON.stringify(users));
+                alert(`Пользователь ${newEmail} создан!`);
+                document.getElementById('new-username').value = '';
+                document.getElementById('new-password').value = '';
+                displayUsers();
+            } else {
+                alert('Email уже занят или данные не заполнены!');
+            }
+        }
+
+        // Отображение списка пользователей
+        function displayUsers() {
+            const userList = document.getElementById('user-list');
+            userList.innerHTML = '';
+            for (const email in users) {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                userItem.textContent = `${email} (${users[email].role})`;
+                if (email !== currentUser.email) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Удалить';
+                    deleteBtn.onclick = () => {
+                        delete users[email];
+                        localStorage.setItem('users', JSON.stringify(users));
+                        displayUsers();
+                        alert(`Пользователь ${email} удалён!`);
+                    };
+                    userItem.appendChild(deleteBtn);
+                }
+                userList.appendChild(userItem);
+            }
+        }
+
+        // Переключение разделов
+        function showSection(sectionName) {
+            currentPath = [sectionName];
+            displayFolders();
+            document.querySelector('.back-btn').classList.add('hidden');
+        }
+
+        // Добавление или редактирование файла
+        function manageFile(folderName, fileIndex = -1) {
+            if (currentUser?.role !== 'admin') {
+                alert('Только администратор может редактировать файлы!');
+                return;
+            }
+            const fileName = prompt(fileIndex >= 0 ? 'Редактировать имя файла:' : 'Введите имя файла (например, Документ.pdf):', fileIndex >= 0 ? folderStructure['root'].find(f => f.name === folderName).contents[fileIndex].name : '');
+            const fileDate = prompt('Введите дату (гггг-мм-дд):', fileIndex >= 0 ? folderStructure['root'].find(f => f.name === folderName).contents[fileIndex].date : '');
+            const fileDescription = prompt('Введите описание:', fileIndex >= 0 ? folderStructure['root'].find(f => f.name === folderName).contents[fileIndex].description : '');
+            if (fileName && fileDate && fileDescription) {
+                let folder = folderStructure['root'].find(f => f.name === folderName);
+                if (folder) {
+                    if (fileIndex >= 0) {
+                        folder.contents[fileIndex] = { name: fileName, type: 'file', date: fileDate, description: fileDescription };
+                    } else {
+                        if (!folder.contents) folder.contents = [];
+                        folder.contents.push({ name: fileName, type: 'file', date: fileDate, description: fileDescription });
+                    }
+                    localStorage.setItem('folderStructure', JSON.stringify(folderStructure));
+                    alert(`Файл ${fileName} ${fileIndex >= 0 ? 'обновлён' : 'добавлен'} в ${folderName}!`);
+                    displayFolders();
+                } else {
+                    alert('Папка не найдена!');
+                }
+            }
+        }
+
+        // Удаление файла
+        function deleteFile(folderName, fileIndex) {
+            if (currentUser?.role !== 'admin') {
+                alert('Только администратор может удалять файлы!');
+                return;
+            }
+            let folder = folderStructure['root'].find(f => f.name === folderName);
+            if (folder && confirm(`Удалить файл ${folder.contents[fileIndex].name}?`)) {
+                folder.contents.splice(fileIndex, 1);
+                localStorage.setItem('folderStructure', JSON.stringify(folderStructure));
+                alert(`Файл ${folder.contents[fileIndex].name} удалён!`);
+                displayFolders();
+            }
+        }
+
+        // Отображение папок и файлов
+        function displayFolders() {
+            const foldersDiv = document.getElementById('folders');
+            foldersDiv.innerHTML = '';
+            let currentFolder = folderStructure;
+            for (let path of currentPath) {
+                currentFolder = currentFolder[path] || currentFolder;
+                if (Array.isArray(currentFolder)) {
+                    currentFolder = currentFolder.find(item => item.name === path) || { contents: [] };
+                }
+            }
+            if (Array.isArray(currentFolder['root'])) {
+                currentFolder['root'].forEach(item => {
+                    const element = document.createElement('div');
+                    element.className = item.type;
+                    if (item.type === 'folder') {
+                        const img = document.createElement('img');
+                        img.src = 'https://img.icons8.com/color/50/000000/folder--v1.png';
+                        element.appendChild(img);
+                        element.innerHTML += `<br>${item.name}`;
+                        element.onclick = () => {
+                            currentPath.push(item.name);
+                            displayFolders();
+                            document.querySelector('.back-btn').classList.remove('hidden');
+                        };
+                        if (currentUser?.role === 'admin') {
+                            const uploadBtn = document.createElement('button');
+                            uploadBtn.textContent = 'Добавить файл';
+                            uploadBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                manageFile(item.name);
+                            };
+                            element.appendChild(uploadBtn);
+                        }
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = 'https://img.icons8.com/color/50/000000/file.png';
+                        element.appendChild(img);
+                        element.innerHTML += `<br>${item.name}<br>${item.date}<br><span class="file-desc">${item.description}</span>`;
+                        if (currentUser?.role === 'admin') {
+                            const editBtn = document.createElement('button');
+                            editBtn.textContent = 'Редактировать';
+                            editBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                const folder = currentFolder['root'].find(f => f.name === item.name.split('/')[0]);
+                                const fileIndex = folder.contents.findIndex(f => f.name === item.name && f.date === item.date && f.description === item.description);
+                                manageFile(item.name.split('/')[0], fileIndex);
+                            };
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.textContent = 'Удалить';
+                            deleteBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                const folder = currentFolder['root'].find(f => f.name === item.name.split('/')[0]);
+                                const fileIndex = folder.contents.findIndex(f => f.name === item.name && f.date === item.date && f.description === item.description);
+                                deleteFile(item.name.split('/')[0], fileIndex);
+                            };
+                            element.appendChild(editBtn);
+                            element.appendChild(deleteBtn);
+                        }
+                    }
+                    foldersDiv.appendChild(element);
+                });
+            }
+        }
+
+        // Возврат на уровень выше
+        function goBack() {
+            if (currentPath.length > 1) {
+                currentPath.pop();
+                displayFolders();
+                if (currentPath.length === 1) {
+                    document.querySelector('.back-btn').classList.add('hidden');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
